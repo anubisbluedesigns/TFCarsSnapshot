@@ -30,15 +30,22 @@ class Settings(BaseSettings):
 
     # Comma-separated list of allowed frontend origins, e.g.
     # "https://dealership-inventory.vercel.app,http://localhost:3100"
-    cors_origins: list[str] = [
-        o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3100").split(",") if o.strip()
-    ]
+    # Kept as a plain string field (not list[str]) because pydantic-settings
+    # auto-binds env vars by field name and expects list-typed fields to be
+    # JSON, not a comma-separated string — parse it ourselves instead below.
+    cors_origins_raw: str = os.getenv("CORS_ORIGINS", "http://localhost:3100")
     jwt_secret: str = os.getenv("JWT_SECRET", "dev-secret-change-me")
     jwt_algorithm: str = "HS256"
     jwt_expires_minutes: int = 60 * 12
 
     class Config:
         env_file = ".env"
+
+    @property
+    def cors_origins(self) -> list[str]:
+        if self.cors_origins_raw.strip() == "*":
+            return ["*"]
+        return [o.strip() for o in self.cors_origins_raw.split(",") if o.strip()]
 
 
 settings = Settings()
