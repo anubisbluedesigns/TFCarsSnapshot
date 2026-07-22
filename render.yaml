@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: dealership-inventory-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: DB_BACKEND
+        value: snowflake
+      - key: SNOWFLAKE_ACCOUNT
+        value: TXFRMSX-HV94520
+      - key: SNOWFLAKE_USER
+        value: INVENTORY_APP
+      - key: SNOWFLAKE_WAREHOUSE
+        value: INVENTORY_WH
+      - key: SNOWFLAKE_DATABASE
+        value: TFC_INVENTORY
+      - key: SNOWFLAKE_SCHEMA
+        value: INVENTORY
+      - key: SNOWFLAKE_ROLE
+        value: INVENTORY_APP_ROLE
+      - key: SNOWFLAKE_INSECURE_MODE
+        value: "true"
+      - key: SNOWFLAKE_PRIVATE_KEY_B64
+        sync: false # paste manually in the Render dashboard — never commit this
+      - key: JWT_SECRET
+        sync: false # paste manually — generate a strong random value, never commit
+      - key: GOOGLE_CLIENT_ID
+        sync: false # paste manually once the OAuth client is created
+      - key: CORS_ORIGINS
+        sync: false # paste the deployed Vercel URL(s) here, comma-separated
+      - key: ALLOW_DEV_LOGIN
+        value: "false"

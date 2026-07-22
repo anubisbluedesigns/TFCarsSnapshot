@@ -1,0 +1,11 @@
+*.pem
+*.p8
+*_rsa_key*
+.env
+.env.local
+*.db
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+frontend/node_modules/
+frontend/.next/
