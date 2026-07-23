@@ -158,6 +158,16 @@ class ColorMapUpsert(BaseModel):
     color_hex: str
 
 
+class MonthlyBucketGoalUpsert(BaseModel):
+    store_id: int
+    store_type: str
+    bucket: str
+    month: str
+    sales_forecast: Optional[int] = None
+    inventory_needed: Optional[int] = None
+    plan_per_vehicle: Optional[float] = None
+
+
 class LoginRequest(BaseModel):
     id_token: str
 

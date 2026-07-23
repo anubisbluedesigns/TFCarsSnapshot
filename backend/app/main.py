@@ -6,6 +6,7 @@ from .db import Base, engine
 from .routers import (
     analytics,
     auth_router,
+    dashboard,
     reprice,
     settings_router,
     sold_not_updated,
@@ -36,6 +37,7 @@ app.include_router(settings_router.router)
 app.include_router(reprice.router)
 app.include_router(analytics.router)
 app.include_router(sold_not_updated.router)
+app.include_router(dashboard.router)
 
 
 @app.get("/health")

@@ -95,6 +95,13 @@ def update_vehicle(
 
     for k, val in data.items():
         setattr(v, k, val)
+
+    # Auto-stamp sold_date when a vehicle first becomes SOLD — nothing in the
+    # UI asks for this explicitly, but the dashboard's MTD sales/gross figures
+    # depend on it being set the moment a sale actually happens.
+    if (data.get("status") or "").upper() == "SOLD" and not v.sold_date:
+        v.sold_date = datetime.date.today()
+
     v.updated_by = user.email
     v.updated_at = datetime.datetime.utcnow()
     db.commit()

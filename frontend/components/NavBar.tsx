@@ -28,7 +28,7 @@ export default function NavBar() {
       const offers = type === "new" ? store.offers_new : store.offers_used;
       const hasScope = user.scopes.some((s) => s.store_id === store.id && (s.store_type === null || s.store_type === type));
       if (offers && hasScope) {
-        links.push({ href: `/inventory/${store.slug}/${type}`, label: `${store.name} ${type === "new" ? "New" : "Used"}` });
+        links.push({ href: `/dashboard/${store.slug}/${type}`, label: `${store.name} ${type === "new" ? "New" : "Used"}` });
       }
     }
   }

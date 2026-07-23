@@ -76,3 +76,7 @@ export function useAuth() {
 export async function devLogin(email: string) {
   return api.get<{ access_token: string; user: User }>(`/auth/dev-login?email=${encodeURIComponent(email)}`);
 }
+
+export async function googleLogin(idToken: string) {
+  return api.post<{ access_token: string; user: User }>("/auth/login", { id_token: idToken });
+}

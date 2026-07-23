@@ -258,3 +258,62 @@ class RepricePolicy(Base):
     day_threshold = Column(Integer, nullable=False)  # 1, 15, 30, 45, 60
     plan_label = Column(String, nullable=False)  # "1st Price", "15 Day Plan", ...
     guidance_text = Column(String, nullable=False)  # "Reprice to 98% of Market"
+
+
+class MonthlyBucketGoal(Base):
+    """Manager-entered monthly plan per bucket, replicating the Snapshot tab's
+    Sales Forecast / Inventory Needed / Plan Per Vehicle columns."""
+
+    __tablename__ = "monthly_bucket_goal"
+    __table_args__ = (
+        UniqueConstraint("store_id", "store_type", "bucket", "month", name="uq_monthly_bucket_goal"),
+    )
+
+    id = Column(Integer, Sequence("monthly_bucket_goal_id_seq", optional=True), primary_key=True)
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)
+    store_type = Column(String, nullable=False)
+    bucket = Column(String, nullable=False)
+    month = Column(String, nullable=False)  # "2026-07"
+    sales_forecast = Column(Integer, nullable=True)
+    inventory_needed = Column(Integer, nullable=True)
+    plan_per_vehicle = Column(Float, nullable=True)
+
+
+class MonthlySnapshotBaseline(Base):
+    """Auto-captured on first dashboard load of a new month — the "1st of Month"
+    figures the old Snapshot tab showed. We have no history before this app
+    existed, so the first month's baseline is just whatever the numbers are
+    when first captured, and it gets more meaningful every month after."""
+
+    __tablename__ = "monthly_snapshot_baseline"
+    __table_args__ = (UniqueConstraint("store_id", "store_type", "month", name="uq_monthly_snapshot_baseline"),)
+
+    id = Column(Integer, Sequence("monthly_snapshot_baseline_id_seq", optional=True), primary_key=True)
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)
+    store_type = Column(String, nullable=False)
+    month = Column(String, nullable=False)
+    on_lot_units = Column(Integer, nullable=True)
+    wholesale_units = Column(Integer, nullable=True)
+    aged45_units = Column(Integer, nullable=True)
+    available_gross = Column(Float, nullable=True)
+    internet_must_have_units = Column(Integer, nullable=True)
+    on_display_units = Column(Integer, nullable=True)
+    captured_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class MonthlyInventoryGoal(Base):
+    """Manager-entered inventory targets for the dashboard's summary block."""
+
+    __tablename__ = "monthly_inventory_goal"
+    __table_args__ = (UniqueConstraint("store_id", "store_type", "month", name="uq_monthly_inventory_goal"),)
+
+    id = Column(Integer, Sequence("monthly_inventory_goal_id_seq", optional=True), primary_key=True)
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)
+    store_type = Column(String, nullable=False)
+    month = Column(String, nullable=False)
+    on_lot_goal = Column(Integer, nullable=True)
+    wholesale_goal = Column(Integer, nullable=True)
+    aged45_goal = Column(Integer, nullable=True)
+    available_gross_goal = Column(Float, nullable=True)
+    internet_must_have_goal = Column(Integer, nullable=True)
+    on_display_goal = Column(Integer, nullable=True)

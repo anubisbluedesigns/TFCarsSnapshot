@@ -26,7 +26,7 @@ export default function HomePage() {
               (s) => s.store_id === store.id && (s.store_type === null || s.store_type === type)
             );
             if (offers && hasScope) {
-              router.replace(`/inventory/${store.slug}/${type}`);
+              router.replace(`/dashboard/${store.slug}/${type}`);
               return;
             }
           }

@@ -16,6 +16,11 @@ DEALS_STORE_NAME = {
     "sars": "SARs",
 }
 
+# deals.inventory_type is "N" (new) or "U" (used) — must match our store_type
+# or a used-car sale will look like an unmatched "new" vehicle (and vice versa)
+# since that stock number never existed in the other type's inventory at all.
+DEALS_INVENTORY_TYPE = {"new": "N", "used": "U"}
+
 
 @router.get("")
 def sold_not_updated(
@@ -50,6 +55,7 @@ def sold_not_updated(
         )
     }
 
+    deals_inventory_type = DEALS_INVENTORY_TYPE.get(store_type)
     try:
         with engine.connect() as conn:
             rows = conn.execute(
@@ -59,13 +65,14 @@ def sold_not_updated(
                            deal_type, tab_year, tab_month
                     FROM DEALERSHIP.PUBLIC.DEALS
                     WHERE store = :store
+                      AND inventory_type = :inventory_type
                       AND stock_number IS NOT NULL
                       AND (tab_year * 12 + tab_month) >=
                           (YEAR(CURRENT_DATE()) * 12 + MONTH(CURRENT_DATE()) - :months_back)
                     ORDER BY tab_year DESC, tab_month DESC
                     """
                 ),
-                {"store": deals_store, "months_back": months_back},
+                {"store": deals_store, "inventory_type": deals_inventory_type, "months_back": months_back},
             ).fetchall()
     except Exception as e:
         raise HTTPException(

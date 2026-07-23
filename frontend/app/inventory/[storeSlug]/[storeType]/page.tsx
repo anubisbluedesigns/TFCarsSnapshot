@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import InventoryGrid from "@/components/InventoryGrid";
@@ -19,6 +20,7 @@ export default function InventoryPage() {
   const [statusOptions, setStatusOptions] = useState<StatusOption[]>([]);
   const [statusColors, setStatusColors] = useState<Record<string, string>>({});
   const [activeBucket, setActiveBucket] = useState<string>("__all__");
+  const [activeModel, setActiveModel] = useState<string>("__all__");
   const [showAdd, setShowAdd] = useState(false);
   const [loading, setLoading] = useState(true);
   const [focusStock, setFocusStock] = useState<string>("");
@@ -62,15 +64,22 @@ export default function InventoryPage() {
   if (!store) return <div className="p-6 text-sm text-neutral-500">Loading store...</div>;
 
   const buckets = Array.from(new Set(vehicles.map((v) => v.bucket))).sort();
-  const filtered = activeBucket === "__all__" ? vehicles : vehicles.filter((v) => v.bucket === activeBucket);
+  const byBucket = activeBucket === "__all__" ? vehicles : vehicles.filter((v) => v.bucket === activeBucket);
+  const models = Array.from(new Set(byBucket.map((v) => v.model).filter((m): m is string => !!m))).sort();
+  const filtered = activeModel === "__all__" ? byBucket : byBucket.filter((v) => v.model === activeModel);
   const fullEdit = canEditStore(store.id, storeType);
 
   return (
     <div className="p-4">
       <div className="flex items-center justify-between mb-3 print:hidden">
-        <h1 className="text-lg font-semibold">
-          {store.name} — {storeType === "new" ? "New" : "Used"} Inventory
-        </h1>
+        <div>
+          <h1 className="text-lg font-semibold">
+            {store.name} — {storeType === "new" ? "New" : "Used"} Inventory
+          </h1>
+          <Link href={`/dashboard/${storeSlug}/${storeType}`} className="text-sm text-blue-700 hover:underline">
+            ← Back to dashboard
+          </Link>
+        </div>
         {fullEdit && (
           <button
             onClick={() => setShowAdd(true)}
@@ -101,12 +110,29 @@ export default function InventoryPage() {
         {buckets.map((b) => (
           <button
             key={b}
-            onClick={() => setActiveBucket(b)}
+            onClick={() => {
+              setActiveBucket(b);
+              setActiveModel("__all__");
+            }}
             className={`text-sm px-3 py-1 rounded border ${activeBucket === b ? "bg-blue-600 text-white border-blue-600" : "bg-white border-neutral-300"}`}
           >
             {b} ({vehicles.filter((v) => v.bucket === b).length})
           </button>
         ))}
+        {models.length > 1 && (
+          <select
+            value={activeModel}
+            onChange={(e) => setActiveModel(e.target.value)}
+            className="text-sm px-2 py-1 rounded border border-neutral-300 bg-white"
+          >
+            <option value="__all__">All Models</option>
+            {models.map((m) => (
+              <option key={m} value={m}>
+                {m} ({byBucket.filter((v) => v.model === m).length})
+              </option>
+            ))}
+          </select>
+        )}
         {focusStock && (
           <button
             onClick={() => setFocusStock("")}
