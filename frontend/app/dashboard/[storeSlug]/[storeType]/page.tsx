@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { Store } from "@/lib/types";
 import type { DashboardData, BucketRow } from "@/lib/dashboardTypes";
@@ -25,21 +25,34 @@ export default function DashboardPage() {
   const [store, setStore] = useState<Store | null>(null);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const month = new Date().toISOString().slice(0, 7);
 
   useEffect(() => {
     if (!user) return;
     api.get<Store[]>("/stores").then((stores) => {
-      setStore(stores.find((s) => s.slug === storeSlug) ?? null);
+      const match = stores.find((s) => s.slug === storeSlug) ?? null;
+      setStore(match);
+      if (!match) setError("You don't have access to this store.");
     });
   }, [user, storeSlug]);
 
   const refresh = useCallback(async () => {
     if (!store) return;
     setLoading(true);
-    const d = await api.get<DashboardData>(`/dashboard?store_id=${store.id}&store_type=${storeType}&month=${month}`);
-    setData(d);
-    setLoading(false);
+    setError(null);
+    try {
+      const d = await api.get<DashboardData>(`/dashboard?store_id=${store.id}&store_type=${storeType}&month=${month}`);
+      setData(d);
+    } catch (e) {
+      setError(
+        e instanceof ApiError && e.status === 403
+          ? "You don't have access to this store/type. Try logging out and back in, or check with an admin."
+          : "Couldn't load the dashboard right now."
+      );
+    } finally {
+      setLoading(false);
+    }
   }, [store, storeType, month]);
 
   useEffect(() => {
@@ -47,6 +60,7 @@ export default function DashboardPage() {
   }, [refresh]);
 
   if (!user) return null;
+  if (error) return <div className="p-6 text-sm text-red-600">{error}</div>;
   if (!store || loading || !data) return <div className="p-6 text-sm text-neutral-500">Loading dashboard...</div>;
 
   const fullEdit = canEditStore(store.id, storeType);

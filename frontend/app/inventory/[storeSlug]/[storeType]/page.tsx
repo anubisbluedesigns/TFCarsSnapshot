@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import InventoryGrid from "@/components/InventoryGrid";
 import AddVehicleForm from "@/components/AddVehicleForm";
@@ -23,6 +23,7 @@ export default function InventoryPage() {
   const [activeModel, setActiveModel] = useState<string>("__all__");
   const [showAdd, setShowAdd] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [focusStock, setFocusStock] = useState<string>("");
 
   useEffect(() => {
@@ -30,6 +31,7 @@ export default function InventoryPage() {
     api.get<Store[]>("/stores").then((stores) => {
       const s = stores.find((st) => st.slug === storeSlug) ?? null;
       setStore(s);
+      if (!s) setError("You don't have access to this store.");
     });
   }, [user, storeSlug]);
 
@@ -37,20 +39,30 @@ export default function InventoryPage() {
     () => async () => {
       if (!store) return;
       setLoading(true);
-      const [v, so] = await Promise.all([
-        api.get<Vehicle[]>(`/vehicles?store_id=${store.id}&store_type=${storeType}`),
-        api.get<StatusOption[]>(`/status-options?store_id=${store.id}&store_type=${storeType}`),
-      ]);
-      setVehicles(v);
-      setStatusOptions(so);
-      setLoading(false);
+      setError(null);
       try {
-        const colors = await api.get<Record<string, string>>(
-          `/settings/status-colors?store_id=${store.id}&store_type=${storeType}`
+        const [v, so] = await Promise.all([
+          api.get<Vehicle[]>(`/vehicles?store_id=${store.id}&store_type=${storeType}`),
+          api.get<StatusOption[]>(`/status-options?store_id=${store.id}&store_type=${storeType}`),
+        ]);
+        setVehicles(v);
+        setStatusOptions(so);
+        try {
+          const colors = await api.get<Record<string, string>>(
+            `/settings/status-colors?store_id=${store.id}&store_type=${storeType}`
+          );
+          setStatusColors(colors);
+        } catch {
+          setStatusColors({});
+        }
+      } catch (e) {
+        setError(
+          e instanceof ApiError && e.status === 403
+            ? "You don't have access to this store/type. Try logging out and back in, or check with an admin."
+            : "Couldn't load inventory right now."
         );
-        setStatusColors(colors);
-      } catch {
-        setStatusColors({});
+      } finally {
+        setLoading(false);
       }
     },
     [store, storeType]
@@ -61,6 +73,7 @@ export default function InventoryPage() {
   }, [refresh]);
 
   if (!user) return null;
+  if (error) return <div className="p-6 text-sm text-red-600">{error}</div>;
   if (!store) return <div className="p-6 text-sm text-neutral-500">Loading store...</div>;
 
   const buckets = Array.from(new Set(vehicles.map((v) => v.bucket))).sort();
