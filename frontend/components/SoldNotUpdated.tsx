@@ -10,8 +10,7 @@ interface DealRow {
   sales_1: string | null;
   sales_2: string | null;
   deal_type: string | null;
-  tab_year: number;
-  tab_month: number;
+  deal_date: string;
 }
 
 interface Props {
@@ -60,6 +59,7 @@ export default function SoldNotUpdated({ storeId, storeType, storeSlug, onFocusS
             <span className="text-neutral-600 truncate flex-1">{r.vehicle}</span>
             <span className="text-neutral-500 text-xs">{r.customer_name}</span>
             <span className="text-neutral-400 text-xs">{r.sales_1}{r.sales_2 ? ` / ${r.sales_2}` : ""}</span>
+            <span className="text-neutral-400 text-xs">{r.deal_date}</span>
           </button>
         ))}
       </div>
