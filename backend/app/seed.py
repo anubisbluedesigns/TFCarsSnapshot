@@ -60,6 +60,16 @@ FULL_EDIT_USERS = [
     # NOTE: email domain assumed to be twinfalls-subaru.com — confirm before go-live (per plan).
     ("Riley Fraser", "riley@twinfalls-subaru.com", [("subaru", "used")]),
     ("Steven Henson", "steven@twinfalls-subaru.com", [("subaru", "new")]),
+    ("JT", "jt@twinfalls-subaru.com", [("subaru", None)]),
+    # Owner/admin — full control across every store and type.
+    ("Christian", "christian@twinfallscars.com", [("chevy", None), ("subaru", None), ("sars", None)]),
+    ("Rob", "rob@twinfallscars.com", [("chevy", None), ("subaru", None), ("sars", None)]),
+]
+
+# Ops managers — view everything, can update status, but can't touch price,
+# bucket moves, or settings (that stays with the full_edit users above).
+MANAGER_USERS = [
+    ("Weston", "weston@twinfallscars.com", [("chevy", None), ("subaru", None), ("sars", None)]),
 ]
 
 
@@ -119,17 +129,21 @@ def seed():
             )
             db.commit()
 
-        for name, email, scopes in FULL_EDIT_USERS:
-            user = db.query(User).filter(User.email == email).first()
-            if not user:
-                user = User(name=name, email=email, role="full_edit", is_active=True)
-                db.add(user)
-                db.flush()
-            existing_scopes = {(s.store_id, s.store_type) for s in user.scopes}
-            for slug, store_type in scopes:
-                store = stores_by_slug[slug]
-                if (store.id, store_type) not in existing_scopes:
-                    db.add(UserStoreScope(user_id=user.id, store_id=store.id, store_type=store_type))
+        def _seed_users(user_list, role):
+            for name, email, scopes in user_list:
+                user = db.query(User).filter(User.email == email).first()
+                if not user:
+                    user = User(name=name, email=email, role=role, is_active=True)
+                    db.add(user)
+                    db.flush()
+                existing_scopes = {(s.store_id, s.store_type) for s in user.scopes}
+                for slug, store_type in scopes:
+                    store = stores_by_slug[slug]
+                    if (store.id, store_type) not in existing_scopes:
+                        db.add(UserStoreScope(user_id=user.id, store_id=store.id, store_type=store_type))
+
+        _seed_users(FULL_EDIT_USERS, "full_edit")
+        _seed_users(MANAGER_USERS, "manager")
         db.commit()
 
         print("Seed complete.")
